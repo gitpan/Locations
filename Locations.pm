@@ -19,13 +19,13 @@ require Exporter;
 
 @EXPORT_OK = qw();
 
-$VERSION = "1.0";
+$VERSION = "1.1";
 
 @Locations::List = ();  ##  sequential list of all existing locations
 
 sub new
 {
-    croak "Usage: \$newlocation = {Locations,\$location}->new([\">\$file\"]);"
+    croak "Usage: \$newlocation = {Locations,\$location}->new([\$filename]);"
       if ((@_ < 1) || (@_ > 2));
 
     my($outer) = shift;
@@ -36,8 +36,7 @@ sub new
 
     if (ref($filename))
     {
-        carp "Locations::new(): reference not allowed as filename";
-        exit 1;
+        croak "Locations::new(): reference not allowed as filename";
     }
 
     $inner = { };
@@ -76,45 +75,20 @@ sub new
 ##                                                             ##
 #################################################################
 
-sub outer_self_contained
+sub self_contained
 {
-    croak "Usage: if (outer_self_contained(\$outer,\$inner))"
+    croak "Usage: if (self_contained(\$outer,\$inner))"
       if (@_ != 2);
 
     my($outer,$inner) = @_;
     my($list,$item);
 
     return(1) if ($outer eq $inner);
-    $list = $outer->{'outer'};
-    foreach $item (keys(%{$list}))
-    {
-        $outer = $list->{$item};
-        return(1) if (outer_self_contained($outer,$inner));
-    }
-    return(0);
-}
-
-#################################################################
-##                                                             ##
-##  The following function is intended for internal use only!  ##
-##  Use it only if you know exactly what you are doing!        ##
-##                                                             ##
-#################################################################
-
-sub inner_self_contained
-{
-    croak "Usage: if (inner_self_contained(\$outer,\$inner))"
-      if (@_ != 2);
-
-    my($outer,$inner) = @_;
-    my($list,$item);
-
-    return(1) if (outer_self_contained($outer,$inner));
     $list = $inner->{'inner'};
     foreach $item (keys(%{$list}))
     {
         $inner = $list->{$item};
-        return(1) if (outer_self_contained($outer,$inner));
+        return(1) if (self_contained($outer,$inner));
     }
     return(0);
 }
@@ -133,11 +107,10 @@ sub print
         {
             if (ref($inner) eq 'Locations')
             {
-                if (inner_self_contained($outer,$inner))
+                if (self_contained($outer,$inner))
                 {
-                    carp
+                    croak
                   "Locations::print(): infinite recursion loop attempted";
-                    exit 1;
                 }
                 else
                 {
@@ -213,7 +186,7 @@ sub dump_recursive
 
 sub dump_location
 {
-    croak "Usage: \$ok = \$location->dump_location([\">\$file\"]);"
+    croak "Usage: \$ok = \$location->dump_location([\$filename]);"
       if ((@_ < 1) || (@_ > 2));
 
     my($location) = shift;
@@ -247,7 +220,7 @@ sub dump_location
 
 sub dump
 {
-    croak "Usage: \$ok = Locations->dump(); | \$ok = \$location->dump([\">\$file\"]);"
+    croak "Usage: \$ok = Locations->dump(); | \$ok = \$location->dump([\$filename]);"
       if ((@_ < 1) || (@_ > 2) || ((@_ == 2) && !ref($_[0])));
 
     my($location) = shift;
@@ -259,8 +232,7 @@ sub dump
         {
             if (ref($_[0]))
             {
-                carp "Locations::dump(): reference not allowed as filename";
-                exit 1;
+                croak "Locations::dump(): reference not allowed as filename";
             }
             return( $location->dump_location($_[0]) );
         }
@@ -285,15 +257,14 @@ sub dump
 
 sub set_filename
 {
-    croak "Usage: \$location->set_filename(\">\$file\");"
+    croak "Usage: \$location->set_filename(\$filename);"
       if (@_ != 2);
 
     my($location,$filename) = @_;
 
     if (ref($filename))
     {
-        carp "Locations::set_filename(): reference not allowed as filename";
-        exit 1;
+        croak "Locations::set_filename(): reference not allowed as filename";
     }
 
     $location->{'file'} = $filename;
@@ -326,8 +297,7 @@ sub traverse_recursive
 
     if (ref($callback) ne 'CODE')
     {
-        carp "Locations::traverse_recursive(): not a code reference";
-        exit 1;
+        croak "Locations::traverse_recursive(): not a code reference";
     }
 
     foreach $item (@{$location->{'data'}})
@@ -362,8 +332,7 @@ sub traverse
 
     if (ref($callback) ne 'CODE')
     {
-        carp "Locations::traverse(): not a code reference";
-        exit 1;
+        croak "Locations::traverse(): not a code reference";
     }
 
     if (ref($location))  ##  object method
@@ -429,33 +398,50 @@ __END__
 
 =head1 NAME
 
-Locations - magical spots in your output files
+Locations - recursive placeholders in the data you generate
 
-"Locations" free you from the need to write output files
-in rigidly sequential order.
+"Locations" free you from the need to GENERATE data in the
+same order in which it will be USED later.
 
-They allow you to define insertion points in output files
-(while you are still writing to them!) which you can fill
-in later.
+They allow you to define insertion points in the middle of your
+data which you can fill in later, at any time you want!
 
-You can also generate data once in your program and use it several
-times at different places in your output files using this class,
-while the data is stored in memory only once.
+For instance you do not need to write output files in rigidly
+sequential order anymore using this module.
+
+Instead, write the data to locations in the order which is the most
+appropriate and natural for you!
+
+When you're finished, write your data to a file or process it otherwise,
+purely in memory (faster!).
+
+Most important: You can nest these placeholders in any way you want!
+
+Potential infinite recursions are detected automatically and refused.
+
+This means that you can GENERATE data ONLY ONCE in your program and
+USE it MANY TIMES at different places, while the data itself is stored
+in memory only once.
+
+Maybe a picture will help to better understand this concept:
 
 Think of "Locations" as folders (or drawers) containing papers
 in a sequential order, most of which contain printable text or
 data, while some may contain the name of another folder (or drawer).
 
-When dumping a location to a file, the papers contained in it
-are printed in their stored order. When a paper containing the
-name of another location is encountered, the contents of that
-location are processed before continuing to print the remaining
-papers of the current location. And so forth, in a recursive
-descent.
+When dumping a location to a file, the papers contained in it are
+printed one after another in the order they were originally stored.
+When a paper containing the name of another location is encountered,
+however, the contents of that location are processed before continuing
+to print the remaining papers of the current location. And so forth,
+in a recursive descent.
 
-Note that you may create as many locations with as many embedded
-locations, as many nesting levels deep as your available memory
-will permit.
+Note that you are not confined to dumping locations to a file,
+you can also process them directly in memory!
+
+Note further that you may create as many locations with as many
+embedded locations, as many nesting levels deep as your available
+memory will permit.
 
 Not even Clodsahamp's multidimensionally expanded tree house (see
 Alan Dean Foster's fantasy novel "Spellsinger" for more details!)
@@ -475,7 +461,7 @@ C<$location = Locations-E<gt>new();>
 
 =item *
 
-C<$location = Locations-E<gt>new("E<gt>$filename");>
+C<$location = Locations-E<gt>new($filename);>
 
 =item *
 
@@ -483,7 +469,7 @@ C<$sublocation = $location-E<gt>new();>
 
 =item *
 
-C<$sublocation = $location-E<gt>new("E<gt>$filename");>
+C<$sublocation = $location-E<gt>new($filename);>
 
 =item *
 
@@ -503,11 +489,11 @@ C<$ok = $location-E<gt>dump();>
 
 =item *
 
-C<$ok = $location-E<gt>dump("E<gt>$filename");>
+C<$ok = $location-E<gt>dump($filename);>
 
 =item *
 
-C<$location-E<gt>set_filename("E<gt>$filename");>
+C<$location-E<gt>set_filename($filename);>
 
 =item *
 
@@ -562,7 +548,7 @@ to dump your top-level locations.
 
 =item *
 
-C<$location = Locations-E<gt>new("E<gt>$filename");>
+C<$location = Locations-E<gt>new($filename);>
 
 This variant of the CLASS METHOD "new()" creates a new top-level
 location ("top-level" means that it isn't embedded in any other
@@ -596,7 +582,7 @@ below) to set this filename, or call the method "dump()"
 
 =item *
 
-C<$sublocation = $location-E<gt>new("E<gt>$filename");>
+C<$sublocation = $location-E<gt>new($filename);>
 
 This variant of the OBJECT METHOD "new()" creates a new location
 which is embedded in the given location "$location" at the current
@@ -637,15 +623,15 @@ Note that other references than "Locations" object references are
 illegal, trying to "print" such a reference to a location will result
 in a warning message and the reference will simply be ignored.
 
-Note also that possible infinite recursions are automatically
-recognized and rejected (with an appropriate error message and
-program abortion), i.e., a given location may not, directly or
-indirectly, contain itself.
+Note also that potential infinite recursions (which would occur when
+a given location contained itself, directly or indirectly!) are
+detected automatically and refused (with an appropriate error message
+and program abortion).
 
-Because of the necessity for this check (which is actually a DOUBLE
-recursion!), it is more efficient to embed locations using the object
-method "new()" (where possible) than with this mechanism, because
-embedding an empty new location is always possible without checking.
+Because of the necessity for this check, it is more efficient to
+embed locations using the object method "new()" (where possible)
+than with this mechanism, because embedding an empty new location
+is always possible without checking.
 
 =item *
 
@@ -731,7 +717,7 @@ the object method "delete()" (explained further below) EXPLICITLY.
 
 =item *
 
-C<$ok = $location-E<gt>dump("E<gt>$filename");>
+C<$ok = $location-E<gt>dump($filename);>
 
 This variant of the OBJECT METHOD "dump()" does the same as the
 variant described immediately above, except that it overrides the
@@ -768,7 +754,7 @@ the object method "delete()" (explained further below) EXPLICITLY.
 
 =item *
 
-C<$location-E<gt>set_filename("E<gt>$filename");>
+C<$location-E<gt>set_filename($filename);>
 
 This object method stores a filename along with the given location
 which will be used as the default filename when dumping that location.
@@ -1092,7 +1078,7 @@ perlobj(1), perlbot(1), perltoot(1).
 
 =head1 VERSION
 
-This man page documents "Locations" version 1.0.
+This man page documents "Locations" version 1.1.
 
 =head1 AUTHOR
 

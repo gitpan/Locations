@@ -1,0 +1,31 @@
+                     =====================================
+                        Package "Locations" Version 1.1
+                     =====================================
+                       for Perl version 5.000 and higher
+
+
+           Copyright (c) 1997 by Steffen Beyer. All rights reserved.
+           This package is free software; you can redistribute and/or
+           modify it under the same terms as Perl itself.
+
+
+Version history in details:
+---------------------------
+
+Version 1.0 was the initial release.
+
+----------------------------------------------------------------------------
+
+Version 1.1 fixes a bug in the detection of potential infinite recursions
+(this bug did not cause any malfunction, but increased the time needed for
+this check unnecessarily!).
+
+The code was cleaned from left-overs from previous versions, i.e., the
+statements "carp - exit" were replaced by "croak", as this is what they
+should be.
+
+Finally, the description was changed to make it more accurate and easy
+to understand, and the documentation was brushed up at a few places.
+
+----------------------------------------------------------------------------
+
