@@ -1,0 +1,84 @@
+                     =====================================
+                        Package "Locations" Version 1.0
+                     =====================================
+                       for Perl version 5.000 and higher
+
+
+           Copyright (c) 1997 by Steffen Beyer. All rights reserved.
+           This package is free software; you can redistribute and/or
+           modify it under the same terms as Perl itself.
+
+
+What does it do:
+----------------
+
+Locations - magical spots in your output files
+
+"Locations" free you from the need to write output files
+in rigidly sequential order.
+
+They allow you to define insertion points in output files
+(while you are still writing to them!) which you can fill
+in later.
+
+You can also generate data once in your program and use it several
+times at different places in your output files using this class,
+while the data is stored in memory only once.
+
+Think of "Locations" as folders (or drawers) containing papers
+in a sequential order, most of which contain printable text or
+data, while some may contain the name of another folder (or drawer).
+
+When dumping a location to a file, the papers contained in it
+are printed in their stored order. When a paper containing the
+name of another location is encountered, the contents of that
+location are processed before continuing to print the remaining
+papers of the current location. And so forth, in a recursive
+descent.
+
+Note that you may create as many locations with as many embedded
+locations, as many nesting levels deep as your available memory
+will permit.
+
+Not even Clodsahamp's multidimensionally expanded tree house (see
+Alan Dean Foster's fantasy novel "Spellsinger" for more details!)
+can compare with this! :-)
+
+
+Installation:
+-------------
+
+Simply install this module using the following commands:
+
+                            % perl Makefile.PL
+                            % make
+                            % make install
+
+
+Documentation:
+--------------
+
+To see the module's documentation, use the command "man Locations" thereafter.
+
+
+Credits:
+--------
+
+Many thanks go to Gero Scholz (now at the Dresdner Bank in Frankfurt, Germany)
+for writing the "ProMAC" macro processor (some sort of a precursor to Perl in
+spirit!) and implementing the concept of "locations" there, which inspired me
+to write this Perl module!
+
+
+Author's note:
+--------------
+
+I hope you will find this module benefitful!
+
+Share and enjoy!
+
+Yours,
+--
+    Steffen Beyer <sb@sdm.de> http://www.engelschall.com/u/sb/
+     "There is enough for the need of everyone in this world,
+      but not for the greed of everyone." - Mahatma Gandhi
